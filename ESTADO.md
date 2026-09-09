@@ -35,13 +35,18 @@ por isso. Aqui cabe o que não cabe num handoff, e o texto sobrevive a mudanças
 | `09-testes` | as 90 verificações e por que só elas |
 | `10-armadilhas` | o que já quebrou e o que morde quem chega |
 
+## Regra de trabalho
+
+**Mudança de comportamento no FitPulse passa por aqui, no mesmo trabalho.** Pedido dele em
+09/09/2026. A tabela do que atualizar em cada caso está no `README.md`.
+
+Ao terminar, rodar `node conferir.mjs`, que confere os números do texto contra o código.
+
 ## O que falta
 
-1. **Manter junto com o código.** A documentação descreve o sistema em 09/09/2026. Toda mudança
-   de comportamento no FitPulse precisa passar por aqui, ou isto vira mentira em três meses.
-2. **Diagramas de verdade.** Os desenhos são em texto, o que basta para ler no GitHub mas fica
+1. **Diagramas de verdade.** Os desenhos são em texto, o que basta para ler no GitHub mas fica
    pobre para apresentar a alguém.
-3. **Manual do usuário.** Foi decidido que este repositório é técnico. Se a academia cliente
+2. **Manual do usuário.** Foi decidido que este repositório é técnico. Se a academia cliente
    precisar de manual, é outro documento, outro tom e provavelmente outro repositório.
 
 ## Decisões que não são óbvias

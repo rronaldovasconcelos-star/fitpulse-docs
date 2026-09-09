@@ -1,6 +1,6 @@
 # Modelo de dados
 
-Tudo em `src/types.ts`. Trinta tipos exportados.
+Tudo em `src/types.ts`. 29 tipos exportados.
 
 ## O desenho em uma figura
 
@@ -196,7 +196,8 @@ Virou uma coleção com `memberId`. Antes era um objeto único, porque só havia
 o aluno ainda não tem plano, `useMemberData` devolve um plano padrão calculado a partir do corpo
 dele, sem gravar nada até ele mexer.
 
-## Tipos que sobraram
+## Tipos que já saíram
 
-`ActiveTab` ainda está exportado em `src/types.ts` e não é mais usado por ninguém: era a
-navegação por aba antes do roteador. Pode ser removido no primeiro commit de limpeza.
+`ActiveTab` era a navegação por aba antes do roteador. Foi removido em 09/09/2026, junto com
+`App.tsx`, `Navbar`, `ProfileModal`, `ManagementTab` e `WorkoutsTab`. Se encontrar referência
+a qualquer um deles, é documentação velha.

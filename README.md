@@ -42,6 +42,39 @@ cerca de 13 mil linhas entre src/ e testes/
 zero erro de tipo com strict ligado
 ```
 
+## Manter isto vivo
+
+**Mudança de comportamento no sistema passa por aqui, no mesmo trabalho.** Não depois, não
+quando sobrar tempo. Documentação que descreve o sistema de ontem é pior que documentação
+nenhuma, porque alguém confia nela e decide errado.
+
+Antes de fechar um trabalho no FitPulse, veja o que mudou:
+
+| se mexeu em | atualize |
+|---|---|
+| tipo, campo ou relação em `types.ts` | [Modelo de dados](docs/03-modelo-de-dados.md) |
+| login, senha, sessão, papel, rota protegida | [Acesso e papéis](docs/04-acesso-e-papeis.md) |
+| acerto, agenda, treino do dia, cálculo de corpo | [Regras de negócio](docs/05-regras-de-negocio.md) |
+| token de cor, tipografia, componente de `ui/` | [Sistema visual](docs/06-sistema-visual.md) |
+| chave do `localStorage`, repositório, migração | [Dados e migração](docs/07-dados-e-migracao.md) |
+| teste novo, ou a contagem de verificações | [Testes](docs/09-testes.md) |
+| camada, pasta, decisão de estrutura | [Arquitetura](docs/02-arquitetura.md) |
+| qualquer coisa que já mordeu alguém | [Armadilhas](docs/10-armadilhas.md) |
+
+Mexer só no visual de uma tela, sem mudar comportamento, não exige documento novo.
+
+**Os números aqui são conferidos contra o código, não estimados.** Há um script para isso:
+
+```bash
+node conferir.mjs            # procura o FitPulse na pasta irmã
+node conferir.mjs ../outro   # ou aponte o caminho
+```
+
+Ele lê o código, conta chaves, tipos, verificações que passam, componentes e fotos, e depois
+procura no texto desta documentação número que não bate mais. Sai com código 1 quando acha algo,
+então serve em automação. Na primeira vez que rodou já pegou uma contagem de tipos que tinha
+envelhecido no mesmo dia.
+
 ## Para quem vai continuar
 
 O maior débito é o backend, e está descrito em
