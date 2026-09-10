@@ -111,3 +111,50 @@ de renderizar qualquer aba nova e passou a recusar acesso ao `localStorage` com 
 O servidor respondia normalmente por `curl`.
 
 Se acontecer, feche o navegador inteiro em vez de abrir mais abas.
+
+## O `&` no caminho da pasta quebra os scripts do npm
+
+Os scripts do `package.json` chamam os executáveis por `node` e caminho completo
+(`node node_modules/vite/bin/vite.js`) em vez de pelo nome curto (`vite`). Não é enfeite.
+
+O npm no Windows executa o script pelo `cmd.exe`, colocando `node_modules\.bin` no `PATH`. Se o
+caminho do projeto tiver `&`, o `cmd` parte a linha ali e trata o resto como um segundo comando.
+A pasta em que o projeto nasceu, exportada do AI Studio, se chama
+`fitpulse---academia,-treino-&-dieta`, e com o nome curto o erro era este, sem citar o `&`:
+
+```
+'-dieta\node_modules\.bin\' não é reconhecido como um comando interno ou externo
+Error: Cannot find module 'C:\Users\franc\Desktop\vite\bin\vite.js'
+```
+
+Quatro dos cinco comandos documentados falhavam assim: `dev`, `build`, `preview` e `lint`. Só
+`testar` funcionava, porque já chamava `node` direto — foi o que deu a pista.
+
+Chamar por `node` resolve para qualquer caminho, e não só para este. Se algum dia um script novo
+for escrito com o nome curto, ele vai falhar só na máquina de quem tiver caractere especial no
+caminho, o que é o pior tipo de defeito.
+
+## A senha `fitpulse123` do `admin` só vale enquanto ninguém a trocar
+
+O primeiro acesso da administração obriga a trocar a senha. Depois disso o navegador guarda o
+salt e o hash novos, e `fitpulse123` deixa de entrar — inclusive numa sessão de teste meses
+depois, quando ninguém lembra qual senha foi escolhida.
+
+Como não há servidor, não há recuperação: o "Perdi o acesso" **recomeça o sistema** e leva junto
+alunos, caixa e parceiros cadastrados no teste.
+
+Para voltar a entrar sem perder os dados, dá para devolver à conta `acc-admin` o par de
+demonstração, no console do navegador:
+
+```js
+const contas = JSON.parse(localStorage.getItem('fitpulse_accounts'));
+const adm = contas.find((a) => a.id === 'acc-admin');
+adm.salt = '7f3a1c9e5b2d8046';
+adm.passwordHash = '13a262e1a026d2176dd56c756e9754fdf85e0666fcd78aaedf054372e343ee0a';
+adm.mustChangePassword = false;
+localStorage.setItem('fitpulse_accounts', JSON.stringify(contas));
+location.reload(); // sem recarregar, o aplicativo segue com as contas antigas em memória
+```
+
+Os dois valores são os mesmos de `INITIAL_ACCOUNTS` em `src/data/defaultData.ts`. O `reload` é
+parte da receita: as contas são lidas na abertura, e trocar só o `localStorage` não basta.

@@ -35,6 +35,15 @@ por isso. Aqui cabe o que não cabe num handoff, e o texto sobrevive a mudanças
 | `09-testes` | as 90 verificações e por que só elas |
 | `10-armadilhas` | o que já quebrou e o que morde quem chega |
 
+**09/09/2026, à noite.** Duas armadilhas novas em `10-armadilhas`, vindas da verificação das
+telas do parceiro:
+
+- **O `&` no caminho da pasta quebrava `npm run dev`, `build`, `preview` e `lint`.** Os scripts
+  do sistema passaram a chamar `node` com o caminho completo. Fica registrado porque o erro não
+  cita o `&` em lugar nenhum e manda procurar no lugar errado.
+- **A senha `fitpulse123` do `admin` morre na primeira troca,** e o "Perdi o acesso" recomeça o
+  sistema. Ficou a receita de console para devolver o par de demonstração sem perder os dados.
+
 ## Regra de trabalho
 
 **Mudança de comportamento no FitPulse passa por aqui, no mesmo trabalho.** Pedido dele em
