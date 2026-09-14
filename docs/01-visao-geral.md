@@ -80,7 +80,7 @@ npm run dev      # http://localhost:3000
 |---|---|
 | `npm run dev` | servidor de desenvolvimento na porta 3000 |
 | `npm run lint` | checagem de tipos, precisa ficar limpa |
-| `npm run testar` | 125 verificações da migração, das regras, do acesso e das traduções para o banco |
+| `npm run testar` | 128 verificações da migração, das regras, do acesso e das traduções para o banco |
 | `npm run build` | gera `dist/`, arquivos estáticos |
 
 Acessos de demonstração, senha `fitpulse123` em todos:

@@ -38,7 +38,7 @@ um arquivo só para que essa troca seja possível sem reescrever as telas.
 
 ```
 cerca de 13 mil linhas entre src/ e testes/
-125 verificações automatizadas, sem framework de teste
+128 verificações automatizadas, sem framework de teste
 zero erro de tipo com strict ligado
 ```
 

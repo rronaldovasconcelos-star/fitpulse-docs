@@ -142,13 +142,27 @@ solto. Um backup gerado antes da versão 1 é importável.
 O import é tolerante: percorre as coleções conhecidas e aplica as que forem array. Se nenhuma
 for, avisa que o arquivo não serve, em vez de deixar o sistema vazio.
 
+## Onde as fotos moram
+
+`ProgressPhoto.imageUrl` guarda uma **referência**, e só `src/data/fotos.ts` sabe o que ela é. Três
+formas convivem: URL `https:` (as fotos de demonstração), `data:` (imagem embutida, modo local) e
+caminho no Storage (`<member_id>/<photo_id>.jpg`, nuvem). `ehUrlPronta` separa as duas primeiras
+da terceira; `useUrlDaFoto` resolve a terceira em URL assinada na hora de exibir.
+
+A interface `ArmazenamentoDeFotos` tem `guardar`, `urlParaExibir` e `apagar`. Antes de guardar, a
+imagem é reduzida no navegador (lado maior 1600 px, JPEG 0,85): uma foto de celular tem 8 MB e
+nada disso serve para comparar antes e depois. No modo local o resultado ainda precisa caber em
+2,5 MB; na nuvem, o bucket aceita até 8 MB.
+
+A tela nunca vê a imagem guardada: `EvolucaoPage` chama `fotos.guardar` e só então grava o registro
+com a referência devolvida. Se o guardar falhar, o registro não é gravado e a pessoa vê o motivo.
+
 ## Limites do localStorage
 
 Cerca de 5 MB por origem, dependendo do navegador. O que consome de verdade são as **fotos de
 evolução**, que viram texto embutido: uma foto de 2 MB ocupa cerca de 2,7 MB depois de
 codificada.
 
-Por isso `ModalFoto` recusa imagem acima de 2,5 MB. Sem esse limite, o aluno estourava a cota e
-o sistema parava de gravar em silêncio.
-
-Foto é o primeiro candidato a sair para armazenamento de verdade quando houver backend.
+Por isso a foto é reduzida antes de ser guardada e, no modo local, `fotosLocal.ts` recusa o que
+ainda passar de 2,5 MB. Sem esse limite, o aluno estourava a cota e o sistema parava de gravar em
+silêncio. Na nuvem a foto sai do registro e vai para o Storage (seção anterior).
