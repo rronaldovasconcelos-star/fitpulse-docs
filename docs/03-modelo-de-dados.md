@@ -1,6 +1,6 @@
 # Modelo de dados
 
-Tudo em `src/types.ts`. 29 tipos exportados.
+Tudo em `src/types.ts`. 30 tipos exportados.
 
 ## O desenho em uma figura
 
@@ -81,14 +81,17 @@ interface Account {
   id: string;
   role: 'admin' | 'aluno' | 'parceiro';
   login: string;          // admin: nome de usuário; aluno: CPF só dígitos; parceiro: e-mail
-  passwordHash: string;   // SHA-256 de `salt:senha`
-  salt: string;
   memberId?, partnerId?: string;
   mustChangePassword: boolean;
   active: boolean;        // parceiro pendente ou recusado tem conta inativa
   createdAt: string;
 }
 ```
+
+A senha não faz parte de `Account`. No modo local ela vive como resumo em `ContaLocal`
+(`Account` mais `passwordHash` e `salt`, SHA-256 de `salt:senha`), que só o serviço de acesso
+lê e escreve; as telas recebem `Account`, sem o resumo. Na nuvem, a senha mora no Supabase Auth
+e o sistema nunca a vê.
 
 O `login` é único entre todos os papéis. É por isso que a tela de entrada tem um campo só, em
 vez de pedir que a pessoa escolha se é aluno ou personal.

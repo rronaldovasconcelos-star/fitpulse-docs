@@ -7,11 +7,11 @@ De cima para baixo, cada uma só conhece a de baixo.
 ```
                         main.tsx
                            │
-                    migrarDados()          ← roda antes do primeiro render
+                    migrarDados()          ← roda antes do primeiro render, só no modo local
+                           │
+                    AuthProvider           ← sessão de quem está usando (serviço de acesso)
                            │
                  AppStateProvider          ← estado em memória + escrita no repo
-                           │
-                    AuthProvider           ← sessão de quem está usando
                            │
                         Root               ← decide o que mostrar
                            │
@@ -23,9 +23,9 @@ De cima para baixo, cada uma só conhece a de baixo.
                            │                  │
                            └────── features ──┘   ← regras puras, sem React
                                       │
-                                  repo.ts         ← único lugar que sabe onde o dado mora
+                          repo.ts    acesso.ts   ← únicos lugares que sabem onde o dado e a conta moram
                                       │
-                                 localStorage
+                          localStorage  ou  Supabase   (VITE_BACKEND)
 ```
 
 ## Por onde um dado entra e sai
@@ -39,9 +39,17 @@ Um exemplo concreto, dar baixa numa mensalidade:
 4. `repo` grava no `localStorage`, na chave `fitpulse_members`.
 
 A ordem importa: o estado muda primeiro e a gravação vem depois. Se a gravação falhar, por cota
-estourada ou navegação privada, a tela já respondeu e o erro aparece no console. Numa versão com
-banco isso vira um problema real, e a decisão de como tratar está em
-[Trocar por um banco](08-trocar-por-banco.md).
+estourada, navegação privada ou rede fora, o provedor mostra o aviso vermelho "Não foi possível
+salvar" e relê do repositório só a coleção afetada, para a tela voltar ao que está guardado.
+
+A sessão vem antes dos dados: `AuthProvider` fica acima do `AppStateProvider`, que só lê o
+repositório depois de saber quem está usando e relê a cada troca de pessoa. No `localStorage`
+isso não muda nada; na nuvem, o que o repositório devolve depende de quem pergunta.
+
+Contas não passam pelo repositório para serem escritas. Criar acesso, redefinir senha, ativar e
+cadastrar parceiro passam por `src/auth/acesso.ts`, a interface `ServicoDeAcesso`, com uma
+implementação por modo. Na nuvem, essas operações exigem a chave de serviço e viram Edge
+Functions; no local, é o `authService` de sempre por trás.
 
 ## As pastas
 

@@ -4,7 +4,7 @@
 npm run testar
 ```
 
-111 verificações em cinco arquivos. Rodam em segundos.
+125 verificações em cinco arquivos. Rodam em segundos.
 
 ## Por que não há framework
 
@@ -48,14 +48,18 @@ arredondamento em centavos, o bloqueio de lançar o mesmo mês duas vezes, o par
 e todos os casos de conflito de agenda, incluindo os que devem **não** conflitar: encostar sem
 sobrepor, outra área no mesmo horário, e editar o próprio horário.
 
-### `testes/acesso.ts`, 23 verificações
+### `testes/acesso.ts`, 37 verificações
 
 Os resumos de senha das contas de demonstração são pré-computados e colados no código. Se
 alguém editar um salt sem recalcular o hash, ninguém entra e a causa é invisível.
 
 Confere que os seis resumos batem com a senha, que cada acesso entra (CPF com e sem pontuação,
 e-mail com maiúscula), que parceiro pendente é recusado com o motivo certo, e que trocar a senha
-invalida a anterior.
+invalida a anterior. Depois, o mesmo ciclo pela interface `ServicoDeAcesso` do modo local:
+entrar, restaurar a sessão da aba, trocar a senha de quem está na sessão, sair, e a conta que sai
+para as telas não carrega o resumo da senha. E os dois caminhos que criam conta: o cadastro público
+do parceiro (nasce pendente, é barrado como "em análise", e-mail repetido é recusado) e o acesso do
+aluno criado pela administração (troca obrigatória, entra pelo CPF, CPF repetido é recusado).
 
 ### `testes/nomes.ts`, 12 verificações
 

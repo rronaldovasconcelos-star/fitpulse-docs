@@ -35,7 +35,13 @@ dígitos; e-mail com maiúscula vira minúsculo. É por isso que digitar `123.45
 
 ## A senha
 
-`src/auth/crypto.ts` guarda o resumo SHA-256 de `salt:senha`, com salt de 16 bytes aleatórios
+Tudo o que cria, entra, troca senha ou ativa uma conta passa por `src/auth/acesso.ts`, a
+interface `ServicoDeAcesso`. As telas chamam `acesso.criarAcessoDoAluno`, `acesso.definirAtiva`,
+`acesso.cadastrarParceiro` e `useAuth().trocarSenha`, e não sabem qual implementação responde:
+`acessoLocal.ts` no `localStorage`, ou a do Supabase Auth na nuvem. Depois de mexer numa conta,
+a tela pede `recarregar(['accounts'])` ao estado, porque a escrita não passou por ele.
+
+No modo local, `src/auth/crypto.ts` guarda o resumo SHA-256 de `salt:senha`, com salt de 16 bytes aleatórios
 por conta. A senha em si nunca é gravada, nem pode ser recuperada.
 
 Há uma implementação própria de SHA-256 no arquivo, além da nativa. Não é preciosismo:
