@@ -158,3 +158,16 @@ location.reload(); // sem recarregar, o aplicativo segue com as contas antigas e
 
 Os dois valores são os mesmos de `INITIAL_ACCOUNTS` em `src/data/defaultData.ts`. O `reload` é
 parte da receita: as contas são lidas na abertura, e trocar só o `localStorage` não basta.
+
+## `import.meta` não existe no bundle dos testes
+
+`testes/rodar.mjs` empacota cada teste com o esbuild em `--format=cjs`. Nesse formato o esbuild
+troca `import.meta` por um objeto vazio, e `import.meta.env.VITE_BACKEND` lançaria `TypeError`
+na primeira linha de qualquer módulo que o lesse no topo. Como `testes/migracao.ts` importa
+`migrations.ts`, que importa `repo.ts`, uma leitura direta em `repo.ts` derrubaria a suíte
+inteira.
+
+Por isso a leitura vive só em `src/data/ambiente.ts`, com guarda (`typeof import.meta`), e o
+cliente do Supabase é criado dentro de `criarRepoSupabase()`, nunca no topo do módulo.
+`testes/supabase.ts` confere que, sem variável, o backend é `local` — se alguém mover a leitura
+para fora da guarda, esse teste é o primeiro a quebrar.

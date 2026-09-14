@@ -4,14 +4,14 @@
 npm run testar
 ```
 
-90 verificações em quatro arquivos. Rodam em segundos.
+111 verificações em cinco arquivos. Rodam em segundos.
 
 ## Por que não há framework
 
 Não há Vitest, Jest nem nada. `testes/rodar.mjs` empacota cada arquivo com o esbuild que já vem
 junto do Vite e executa no Node.
 
-Quatro arquivos de teste não justificam mais uma dependência, mais um arquivo de configuração e
+Cinco arquivos de teste não justificam mais uma dependência, mais um arquivo de configuração e
 mais uma coisa para atualizar. A função `conferir(nome, real, esperado)` tem oito linhas e
 compara com `JSON.stringify`. Quando o número de testes crescer a ponto de doer, aí vale trocar.
 
@@ -64,6 +64,17 @@ sistema e reprova qualquer um que fique vazio, termine em preposição ou passe 
 botão.
 
 Existe porque o corte anterior produzia "Crucifixo no" e "Desenvolvimento com" na tela.
+
+### `testes/supabase.ts`, 21 verificações
+
+As duas traduções que ficam entre o sistema e o banco: nome de coluna (`monthlyFee` ↔
+`monthly_fee`, em `src/data/nomesDeColuna.ts`) e identificador de acesso (`admin` e CPF viram
+e-mail sintético, em `src/auth/identificador.ts`). São puras e não precisam de rede.
+
+Confere a ida e volta de um aluno, de um parceiro com acordo, de uma dieta com refeições e de
+uma ficha com exercícios (os objetos aninhados atravessam intactos), que `undefined` vira `null`
+na ida e `null` some na volta, que `created_at` é descartado, e que sem variável de ambiente o
+backend é o local — o que prova que `import.meta` não derruba o bundle dos testes.
 
 ## O que não é testado
 

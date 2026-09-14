@@ -50,6 +50,35 @@ implementação local resolve na hora.
 exceção: cota estourada e navegação privada não podem derrubar a tela. Falha de gravação vai
 para o console.
 
+## Onde os dados moram é decidido no build
+
+`src/data/ambiente.ts` lê `VITE_BACKEND`. Com `supabase`, o repositório é o da nuvem; com
+qualquer outro valor, ou sem a variável, é o `localStorage`. As telas não sabem qual dos dois
+está em uso.
+
+| comando | arquivo de ambiente | backend |
+|---|---|---|
+| `npm run dev`, `npm run build` | nenhum | local |
+| `npm run dev:nuvem`, `npm run build:nuvem` | `.env.nuvem.local` | Supabase |
+
+O `.env.example` mostra o que o `.env.nuvem.local` precisa ter. O arquivo real é ignorado pelo
+git; a chave de serviço, que só os scripts de operação usam, não tem prefixo `VITE_` e por isso
+nunca entra no site.
+
+A leitura de `import.meta.env` fica isolada nesse módulo, com guarda, porque o bundle
+CommonJS dos testes não tem `import.meta` (ver [Armadilhas](10-armadilhas.md)).
+
+## Quando a gravação falha
+
+O estado em memória muda antes de o repositório gravar, para a tela responder na hora. Se a
+gravação falhar, `AppStateProvider` mostra o aviso vermelho "Não foi possível salvar", relê do
+repositório só a coleção afetada, e a tela volta a mostrar o que de fato está guardado. É a
+opção mais simples das três descritas em [Trocar por um banco](08-trocar-por-banco.md): a
+pessoa vê a mudança sumir, mas nunca fica achando que salvou.
+
+Se a carga inicial falhar (banco fora, sem rede), a tela oferece "Tentar de novo" em vez de
+ficar em "Carregando…" para sempre.
+
 ## A migração
 
 `src/data/migrations.ts`, chamada em `main.tsx` antes do primeiro render.
