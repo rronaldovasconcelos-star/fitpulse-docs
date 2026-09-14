@@ -1,131 +1,112 @@
 # Trocar o localStorage por um banco
 
-O maior débito do projeto. Este documento é o plano.
+Este documento era o plano. Em 14/09/2026 o plano virou código: o sistema roda nos dois modos,
+`localStorage` e Supabase, escolhidos no build. O que segue é **como foi feito** e o que
+ficou para depois. O passo a passo do painel está em [Operar o Supabase](11-supabase-operacao.md).
 
-## Por que precisa
+## Por que precisava
 
-Três coisas são verdade hoje e nenhuma delas se resolve no navegador:
+Três coisas eram verdade e nenhuma se resolvia no navegador:
 
-1. **Os dados não passam de um dispositivo para outro.** O aluno não abre a ficha no celular
-   dele, porque ela está no computador da recepção. Isso sozinho já impede o produto de ser o
-   que promete.
-2. **O login não protege nada.** Quem abre as ferramentas do desenvolvedor lê o financeiro,
-   muda o próprio papel para `admin` e forja uma sessão.
-3. **Limpar os dados do site apaga tudo.** Não há cópia em lugar nenhum, além do backup manual
-   que alguém precisa lembrar de gerar.
+1. **Os dados não passavam de um dispositivo para outro.** O aluno não abria a ficha no celular
+   dele, porque ela estava no computador da recepção.
+2. **O login não protegia nada.** Quem abria as ferramentas do desenvolvedor lia o financeiro,
+   mudava o próprio papel para `admin` e forjava uma sessão.
+3. **Limpar os dados do site apagava tudo.** Não havia cópia em lugar nenhum.
 
-## O que já está pronto para a troca
+## O que segurou a troca
 
-O sistema foi construído esperando isso.
+O sistema foi construído esperando isso, e as três apostas pagaram:
 
-**A camada de dados está isolada.** `src/data/repo.ts` é o único arquivo que sabe onde os dados
-moram. As telas chamam `salvar`, `remover` e `substituir` no estado global, que chama o
-repositório.
+- **`src/data/repo.ts` era o único lugar que sabia onde os dados moravam.** A nuvem entrou como
+  `repoSupabase.ts`, cumprindo a mesma `DataRepo`, e `repo.ts` escolhe um dos dois por
+  `VITE_BACKEND`. Nenhuma tela mudou por causa disso.
+- **Os métodos já eram assíncronos.** Nenhuma chamada mudou de forma.
+- **O escopo por aluno já era explícito** (`useMemberData`, os filtros do parceiro). Cada um
+  virou uma política de acesso por linha, quase um para um.
 
-**Os métodos já são assíncronos.** Nenhuma chamada precisa mudar de forma.
+## As seis fases, como ficaram
 
-**O escopo por aluno já está explícito.** `useMemberData(memberId)` filtra tudo o que é de um
-aluno. Esses filtros viram políticas de acesso por linha no banco, quase um para um.
+### 1. Esquema — `supabase/migrations/0001_esquema.sql`
 
-## O caminho recomendado: Supabase
+Uma tabela por coleção, colunas em snake_case, tradução mecânica em `src/data/nomesDeColuna.ts`.
+Decisões que não estavam no plano e valem registrar:
 
-Autenticação pronta, Postgres, políticas de acesso por linha e armazenamento de arquivo para as
-fotos. Gratuito para começar, e o sistema continua sendo arquivos estáticos.
+- **Ids continuam `text`** (`mem-1`, `par-1726…`). Trocar por uuid obrigaria a mexer em toda
+  geração de id nas telas, sem ganho.
+- **Datas em `text`**, no formato que o sistema já usa. `date`/`timestamptz` mudariam a string
+  na volta e quebrariam comparações que funcionam.
+- **`jsonb` para o aninhado** (`profile`, `agreement`, `exercises`, `meals`). Um `Partner` ou
+  uma ficha é sempre lido e gravado inteiro; dividir criaria junção sem ganho. O histórico de
+  acordos do parceiro ficou para depois, como o plano previa.
+- **FK só onde apagar deve propagar.** Cópias históricas (`plan_name`, `monthly_fee`,
+  `member_name`) ficam sem FK, como o doc 03 já explicava.
+- **`Account` virou `profiles`**, 1:1 com `auth.users`, sem senha. No sistema o tipo `Account`
+  perdeu `passwordHash`/`salt`, que foram para `ContaLocal`, só do modo local.
+- **`gymInfo` saiu de `ai_config` para `gym_info`**, porque a página pública precisa do
+  endereço e da chave PIX, e a chave do agente não pode ir junto. O tipo `AIAgentConfig` não
+  mudou: o repositório compõe as duas tabelas.
+- **Parceiros aprovados para anônimo via view `parceiros_publicos`** (quatro colunas), em vez
+  de privilégio por coluna, que quebra `select *`.
 
-### Fase 1, o esquema
+### 2. Repositório — `src/data/repoSupabase.ts`
 
-Uma tabela por coleção, com os mesmos nomes de campo dos tipos em `src/types.ts`. Duas mudanças:
+`colecaoSupabase(tabela)` e `documentoSupabase(tabela)` genéricos, mais quatro casos
+comentados: `accounts` (somente leitura), `partners` (mesclado com a view), `aiConfig` (duas
+tabelas) e os três documentos de linha única. `substituirTudo` grava antes de apagar, e o
+delete só alcança o que a política deixa ver.
 
-- `Account` deixa de existir como tabela. Vira `auth.users` do Supabase mais uma tabela
-  `profiles` com `role`, `member_id`, `partner_id` e `must_change_password`.
-- Os campos que hoje são cópia (`Member.planName`, `Member.monthlyFee`) continuam cópia. É
-  proposital: o histórico não pode mudar quando alguém edita um plano.
+Duas telas que reescreviam a coleção inteira (`LembretesPage`, `AgentePage`) passaram a gravar
+por diferença, senão o aluno tentaria inserir lembretes de outros alunos e a política recusaria.
 
-O `PartnerAgreement`, que hoje vive dentro do parceiro, pode virar coluna `jsonb` ou tabela
-própria. Tabela própria abre espaço para histórico de acordos, que hoje não existe.
+### 3. Políticas — `supabase/migrations/0002_politicas.sql`
 
-### Fase 2, o repositório novo
+Funções `security definer` (`sou_admin`, `meu_member_id`, `meus_alunos_ids`…) para não
+recursar em `profiles`; uma política por tabela e papel; trigger `proteger_colunas` para o
+aluno não mudar a própria mensalidade. A tabela completa está em
+[Acesso e papéis](04-acesso-e-papeis.md). `npm run conferir-rls` prova cada linha contra o
+projeto real, e ficou vermelho antes das políticas entrarem.
 
-Escrever `criarRepoSupabase()` cumprindo a mesma interface `DataRepo`. É o trabalho mais
-mecânico da migração:
+### 4. Tratamento de erro — `AppStateProvider`
 
-```ts
-function colecaoSupabase<T extends { id: string }>(tabela: string): Colecao<T> {
-  return {
-    async listar() {
-      const { data, error } = await supabase.from(tabela).select('*');
-      if (error) throw error;
-      return data as T[];
-    },
-    async salvar(item) {
-      const { error } = await supabase.from(tabela).upsert(item);
-      if (error) throw error;
-    },
-    // remover, substituirTudo
-  };
-}
-```
+A opção 1, como o plano recomendava: estado otimista, e se a gravação falhar, aviso vermelho e
+releitura só da coleção afetada. A carga inicial que falha oferece "Tentar de novo". As opções
+2 (desfazer só o item) e 3 (fila de escrita para internet ruim) continuam abertas.
 
-Trocar `export const repo = criarRepoLocal()` por uma escolha via variável de ambiente permite
-rodar os dois lados durante a transição.
+### 5. Fotos — `src/data/fotos.ts`
 
-### Fase 3, as políticas de acesso
+Interface `ArmazenamentoDeFotos` com duas implementações. Na nuvem, o arquivo vai para o
+bucket privado `fotos-evolucao` e `imageUrl` guarda o caminho; para exibir, vira URL assinada
+por uma hora. A imagem é reduzida no navegador antes de subir (1600 px), o que também aliviou
+o modo local.
 
-É aqui que o sistema ganha segurança de verdade. Cada filtro que hoje está no cliente vira
-política no banco:
+### 6. Migrar quem já usava — `scripts/importar-backup-supabase.ts`
 
-| hoje, no cliente | vira, no banco |
-|---|---|
-| `useMemberData` filtra por `memberId` | aluno lê apenas linhas onde `member_id` é o dele |
-| parceiro vê os alunos com `partnerId` dele | parceiro lê alunos onde `partner_id` é o dele |
-| `RoleGate` bloqueia rota de outro papel | administração é a única com acesso a `transactions` |
+Lê o JSON exportado por Configurações, passa por `migrarBackup()`, insere tudo, cria as contas
+com senha nova (as locais são descartadas) e sobe as fotos `data:` para o bucket.
 
-A regra de ouro: **o filtro no cliente continua existindo, para a tela**, mas quem decide o que
-sai do banco é a política.
+## O que mudou nas telas, afinal
 
-### Fase 4, o tratamento de erro
+O plano dizia "nenhuma tela precisa mudar". Quase: as que **escreviam em `accounts`** mudaram,
+porque na nuvem criar ou ativar o acesso de outra pessoa exige a chave de serviço. Elas passaram
+a chamar `src/auth/acesso.ts` (a interface `ServicoDeAcesso`, com uma implementação por modo),
+que na nuvem chama as Edge Functions `acesso-admin` e `cadastrar-parceiro`. Foram seis
+arquivos, todos em `pages/admin` e `pages/auth`.
 
-Este é o ponto que exige decisão de projeto, e não só código.
+E a ordem dos provedores inverteu: `AuthProvider` acima de `AppStateProvider`, porque o que o
+repositório devolve depende de quem pergunta.
 
-Hoje `AppStateProvider` atualiza o estado em memória primeiro e grava depois. Com banco, a
-gravação pode falhar por rede, e a tela já mostrou o resultado.
+## O que ficou para depois
 
-Três opções, em ordem de esforço:
+- **Fila de escrita para internet ruim** (opção 3 do erro).
+- **Uma única chamada de carga** (`rpc carregar_tudo()`) em vez de dezesseis `select` no
+  mount. Hoje são requisições paralelas, aceitável; medir antes de mexer.
+- **Histórico de acordos do parceiro** (tabela própria em vez de `jsonb`).
+- **Gerador de id central** com sufixo aleatório, porque `Date.now()` colide em multiusuário.
+- **Hospedar o site** e trocar a marca pela do cliente.
 
-1. **Recarregar em caso de falha.** Simples, e a pessoa vê a mudança sumir. Aceitável para
-   começar.
-2. **Desfazer só o item que falhou** e avisar. Mais trabalho, resultado melhor.
-3. **Fila de escrita com repetição**, para funcionar mal conectado. É o certo para uma academia
-   com internet ruim, e é bem mais caro.
+## Alternativa que ficou em aberto: Postgres na própria VPS
 
-Comece pela primeira, mas escreva o `avisar` de erro desde o início.
-
-### Fase 5, as fotos
-
-`ProgressPhoto.imageUrl` hoje é a imagem inteira embutida em texto, e é o que mais consome cota.
-Vira o Storage do Supabase, com o campo guardando a URL.
-
-Isso permite tirar o limite de 2,5 MB e melhorar a qualidade das fotos de evolução.
-
-### Fase 6, migrar quem já usava
-
-Se alguma academia já estiver rodando a versão local, precisa de um caminho de subida:
-
-1. Exportar o backup pela tela de Configurações.
-2. Uma rotina que lê esse JSON e insere no banco, criando as contas de acesso.
-3. As senhas locais são descartadas, porque o resumo local não serve ao Supabase. Todo mundo
-   recebe senha nova.
-
-## O que não muda
-
-Vale dizer, porque é o ponto da arquitetura: **nenhuma tela precisa mudar**. As páginas, os
-shells, os componentes e as regras de negócio continuam iguais. O trabalho está no repositório,
-nas políticas e no tratamento de erro.
-
-## Alternativa: Postgres na própria VPS
-
-Se a preferência for não depender do Supabase, o mesmo desenho funciona com Postgres e uma API
-própria. A diferença é que autenticação, políticas de acesso e armazenamento de arquivo passam a
-ser trabalho seu, o que é bastante código antes de qualquer funcionalidade nova aparecer.
-
-O `DataRepo` continua sendo a fronteira, e é isso que mantém a escolha em aberto.
+O mesmo desenho funciona com Postgres e uma API própria; a diferença é que autenticação,
+políticas e armazenamento viram código seu. O `DataRepo` e o `ServicoDeAcesso` continuam sendo
+a fronteira, e é isso que mantém a escolha reversível.
