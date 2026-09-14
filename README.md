@@ -23,6 +23,7 @@ alguma segurança.
 | [Trocar por um banco](docs/08-trocar-por-banco.md) | o passo a passo para tirar o sistema do navegador |
 | [Testes](docs/09-testes.md) | o que é testado, por que só isso, e como rodar |
 | [Armadilhas](docs/10-armadilhas.md) | o que já quebrou, e o que morde quem chega agora |
+| [Operar o Supabase](docs/11-supabase-operacao.md) | o que se faz à mão no painel e na linha de comando para rodar na nuvem |
 
 ## Resumo de uma tela
 
@@ -38,7 +39,7 @@ um arquivo só para que essa troca seja possível sem reescrever as telas.
 
 ```
 cerca de 13 mil linhas entre src/ e testes/
-128 verificações automatizadas, sem framework de teste
+129 verificações automatizadas, sem framework de teste
 zero erro de tipo com strict ligado
 ```
 
@@ -57,6 +58,8 @@ Antes de fechar um trabalho no FitPulse, veja o que mudou:
 | acerto, agenda, treino do dia, cálculo de corpo | [Regras de negócio](docs/05-regras-de-negocio.md) |
 | token de cor, tipografia, componente de `ui/` | [Sistema visual](docs/06-sistema-visual.md) |
 | chave do `localStorage`, repositório, migração | [Dados e migração](docs/07-dados-e-migracao.md) |
+| tabela, política ou bucket em `supabase/migrations` | [Modelo de dados](docs/03-modelo-de-dados.md), [Acesso](docs/04-acesso-e-papeis.md), [Operar o Supabase](docs/11-supabase-operacao.md) |
+| Edge Function em `supabase/functions` | [Acesso](docs/04-acesso-e-papeis.md), [Operar o Supabase](docs/11-supabase-operacao.md) |
 | teste novo, ou a contagem de verificações | [Testes](docs/09-testes.md) |
 | camada, pasta, decisão de estrutura | [Arquitetura](docs/02-arquitetura.md) |
 | qualquer coisa que já mordeu alguém | [Armadilhas](docs/10-armadilhas.md) |

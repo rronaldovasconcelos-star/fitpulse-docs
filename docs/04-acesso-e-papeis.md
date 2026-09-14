@@ -122,3 +122,33 @@ prefixo da rota ≠ papel da sessão   → casa do papel
 O último é o que impede um aluno de abrir `#/admin/caixa` digitando na barra de endereço. As
 rotas públicas ficam de fora dessa verificação, o que mantém a apresentação acessível mesmo com
 alguém logado.
+
+## Na nuvem: o que protege de verdade
+
+Com `VITE_BACKEND=supabase`, o login deixa de ser só organização de tela:
+
+- **A senha mora no Supabase Auth.** O sistema nunca a vê nem guarda resumo. Como o Auth só
+  conhece e-mail, `admin` e o CPF viram um e-mail sintético determinístico
+  (`<login>@acesso.fitpulse.local`, em `src/auth/identificador.ts`); o parceiro usa o e-mail
+  real. Efeito: recuperação por e-mail só existe para o parceiro. Aluno e administração
+  dependem da redefinição pela recepção, que já era o fluxo.
+- **`accounts` é a tabela `profiles`**, 1:1 com `auth.users`: papel, login, `member_id`,
+  `partner_id`, `must_change_password`, `active`. O repositório só a lê.
+- **Criar ou mexer no acesso de outra pessoa exige a chave de serviço**, que nunca chega ao
+  navegador. Passa pela Edge Function `acesso-admin` (criar acesso de aluno, redefinir senha,
+  ativar ou desativar, apagar), que confere pelo token que quem chama é uma administração
+  ativa. Desativar também bane o usuário, para o token parar de valer na hora.
+- **O cadastro público do parceiro é a Edge Function `cadastrar-parceiro`**: cria o usuário
+  sem e-mail de confirmação, o parceiro pendente e a conta inativa, nesta ordem. Nada usa
+  `auth.signUp`, e "Enable sign ups" fica desligado no painel.
+- **Quem decide o que sai do banco são as políticas de acesso por linha** em
+  `supabase/migrations/0002_politicas.sql`, uma por tabela e papel: o aluno lê a própria
+  matrícula e nada do caixa; o parceiro lê os alunos dele, a agenda inteira e só os lançamentos
+  que lhe dizem respeito; a administração lê tudo. Funções `security definer`
+  (`sou_admin()`, `meu_member_id()`, `meus_alunos_ids()`) evitam recursão em `profiles`, e um
+  trigger impede o aluno de mudar as colunas financeiras da própria linha.
+- **A sessão continua na aba** (`sessionStorage`), agora como token do Supabase: fechar a aba
+  derruba, recarregar mantém.
+
+`npm run conferir-rls` prova tudo isso contra o projeto real, e fica vermelho se rodar antes
+das políticas. O passo a passo do painel está em [Operar o Supabase](11-supabase-operacao.md).

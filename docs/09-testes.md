@@ -4,7 +4,7 @@
 npm run testar
 ```
 
-128 verificações em cinco arquivos. Rodam em segundos.
+129 verificações em cinco arquivos. Rodam em segundos.
 
 ## Por que não há framework
 
@@ -69,7 +69,7 @@ botão.
 
 Existe porque o corte anterior produzia "Crucifixo no" e "Desenvolvimento com" na tela.
 
-### `testes/supabase.ts`, 24 verificações
+### `testes/supabase.ts`, 25 verificações
 
 As duas traduções que ficam entre o sistema e o banco: nome de coluna (`monthlyFee` ↔
 `monthly_fee`, em `src/data/nomesDeColuna.ts`) e identificador de acesso (`admin` e CPF viram
@@ -79,7 +79,8 @@ Confere a ida e volta de um aluno, de um parceiro com acordo, de uma dieta com r
 uma ficha com exercícios (os objetos aninhados atravessam intactos), que `undefined` vira `null`
 na ida e `null` some na volta, que `created_at` é descartado, e que sem variável de ambiente o
 backend é o local — o que prova que `import.meta` não derruba o bundle dos testes. E que
-`ehUrlPronta` distingue URL pronta (`https:`, `data:`) de caminho no armazenamento de fotos.
+`ehUrlPronta` distingue URL pronta (`https:`, `data:`) de caminho no armazenamento de fotos, e que a
+cópia do identificador nas Edge Functions usa o mesmo domínio sintético do sistema.
 
 ## O que não é testado
 

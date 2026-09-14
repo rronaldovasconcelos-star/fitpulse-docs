@@ -171,3 +171,43 @@ Por isso a leitura vive só em `src/data/ambiente.ts`, com guarda (`typeof impor
 cliente do Supabase é criado dentro de `criarRepoSupabase()`, nunca no topo do módulo.
 `testes/supabase.ts` confere que, sem variável, o backend é `local` — se alguém mover a leitura
 para fora da guarda, esse teste é o primeiro a quebrar.
+
+## Política de acesso que consulta `profiles` recursa
+
+Uma política em `profiles` que leia `profiles` para saber o papel entra em "infinite recursion
+detected in policy". Por isso toda função auxiliar das políticas (`papel_atual`, `sou_admin`,
+`meu_member_id`, `meus_alunos_ids`) é `security definer` com `set search_path = public`: roda
+com os privilégios de quem a criou e não passa pela RLS. Nas políticas, chame-as como
+`(select public.sou_admin())`, entre parênteses, para o planejador avaliar uma vez por consulta.
+
+## Quem escreve precisa poder ler a mesma linha
+
+`update`, `delete` e `upsert` referenciam a linha existente, e o Postgres aplica a política de
+SELECT nessa referência. Uma política de escrita sem a de leitura par produz "0 linhas
+afetadas" em silêncio, sem erro. Toda política de escrita em `0002_politicas.sql` tem a de
+leitura correspondente; ao criar uma nova, crie as duas.
+
+Corolário: um `update` barrado pela RLS **não dá erro**, só não faz nada. O que dá erro é o
+trigger `proteger_colunas` e o `with check` de `insert`. `conferir-rls` conta com isso.
+
+## A CLI do Supabase e o `&` da pasta
+
+O pacote `supabase` do npm instala um atalho em `node_modules/.bin`, e é o atalho que o `&`
+no nome da pasta quebra. Instale pela `winget install Supabase.CLI` e ela vale para qualquer
+pasta. Os scripts de operação (`npm run semear`, `conferir-rls`) chamam `node` direto, pelo
+`scripts/rodar.mjs`, pelo mesmo motivo.
+
+## `Date.now()` como id em multiusuário
+
+Os ids são `mem-<timestamp>`, `p-<timestamp>`. No navegador de uma pessoa nunca colidiu; com
+várias pessoas na nuvem, duas gravações no mesmo milissegundo produzem o mesmo id, e o upsert
+sobrescreve a outra em silêncio se a RLS deixar (mesmo dono) ou falha se não deixar. É raro,
+mas existe. Quando doer, o conserto é um `gerarId(prefixo)` com sufixo aleatório num lugar só.
+
+## O e-mail sintético e o `signUp`
+
+`auth.signUp` do lado do cliente valida o domínio do e-mail e pode recusar
+`acesso.fitpulse.local`. Nada no sistema usa `signUp`: toda criação passa por
+`auth.admin.createUser`, que aceita. Se um dia o painel reclamar, o domínio é uma constante
+única (`DOMINIO_SINTETICO`) com uma cópia em `supabase/functions/_shared/identificador.ts`, e
+`testes/supabase.ts` acusa se as duas divergirem.

@@ -30,6 +30,8 @@ if (!sistema) {
 console.log(`Sistema: ${sistema}\n`);
 
 const ler = (...partes) => readFileSync(join(sistema, ...partes), 'utf8');
+/** Para o que ainda pode não existir no sistema (a pasta supabase/ chegou depois). */
+const lerSeExistir = (...partes) => (existsSync(join(sistema, ...partes)) ? ler(...partes) : '');
 const contar = (texto, padrao) => (texto.match(padrao) ?? []).length;
 
 /** Roda os testes do sistema e conta quantas verificações passaram. */
@@ -84,6 +86,18 @@ const medidas = [
     valor: readdirSync(join(sistema, 'public', 'fotos')).filter((f) => f.endsWith('.jpg')).length,
     onde: 'docs/06-sistema-visual.md',
   },
+  {
+    o_que: 'tabelas no Supabase',
+    valor: contar(lerSeExistir('supabase', 'migrations', '0001_esquema.sql'), /^create table public\./gm),
+    onde: 'docs/03-modelo-de-dados.md',
+  },
+  {
+    o_que: 'políticas de acesso por linha',
+    valor:
+      contar(lerSeExistir('supabase', 'migrations', '0002_politicas.sql'), /^create policy /gm) +
+      contar(lerSeExistir('supabase', 'migrations', '0003_storage.sql'), /^create policy /gm),
+    onde: 'docs/04-acesso-e-papeis.md',
+  },
 ];
 
 console.log('Números de hoje:\n');
@@ -102,6 +116,8 @@ const alvos = [
   { rotulo: 'verificações', certo: medidas[2].valor, padrao: /(\d+)\s+verificaç/gi },
   { rotulo: 'tipos exportados', certo: medidas[1].valor, padrao: /(\d+)\s+tipos exportados/gi },
   { rotulo: 'chaves', certo: medidas[0].valor, padrao: /(\d+|dezessete)\s+chaves/gi },
+  { rotulo: 'tabelas', certo: medidas[6].valor, padrao: /(\d+|dezessete)\s+tabelas/gi },
+  { rotulo: 'políticas', certo: medidas[7].valor, padrao: /(\d+)\s+políticas/gi },
 ];
 
 const porExtenso = { dezessete: 17, dezesseis: 16, dezoito: 18 };
